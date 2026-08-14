@@ -1,0 +1,66 @@
+services:
+  memory-core:
+    image: ${MEMORY_CORE_IMAGE:-agentmemory/memory-core:latest}
+    container_name: tdai-memory-core
+    ports:
+      - "${MEMORY_CORE_PORT:-8420}:8420"
+    volumes:
+      - ${MEMORY_CORE_VOLUME:-tdai-memory-core-data}:/data/tdai-memory
+    environment:
+      TDAI_GATEWAY_PORT: 8420
+      TDAI_GATEWAY_HOST: 0.0.0.0
+      TDAI_GATEWAY_API_KEY: ${MEMORY_CORE_GATEWAY_API_KEY:-}
+      TDAI_DATA_DIR: /data/tdai-memory
+      TDAI_LLM_BASE_URL: ${MEMORY_LLM_BASE_URL}
+      TDAI_LLM_API_KEY: ${MEMORY_LLM_API_KEY}
+      TDAI_LLM_MODEL: ${MEMORY_LLM_MODEL}
+      TDAI_SKILL_ENABLED: "true"
+    networks:
+      - tdai-memory-stack
+    restart: unless-stopped
+
+  memory-hub:
+    image: ${MEMORY_HUB_IMAGE:-agentmemory/memory-hub:latest}
+    container_name: tdai-memory-hub
+    depends_on:
+      - memory-core
+    ports:
+      - "${PANEL_PORT:-8125}:8125"
+      - "${KNOWLEDGE_PORT:-8424}:8424"
+    volumes:
+      - ${PANEL_VOLUME:-tdai-panel-data}:/data/knowledge
+    environment:
+      REMOTE_INSTANCE_URL: http://memory-core:8420
+      REMOTE_INSTANCE_KEY: local
+      KNOWLEDGE_PUBLIC_BASE_URL: http://memory-hub:8424/v3
+      LLM_MODE: custom
+      LLM_BASE_URL: ${MEMORY_LLM_BASE_URL}
+      LLM_API_KEY: ${MEMORY_LLM_API_KEY}
+      LLM_MODEL: ${MEMORY_LLM_MODEL}
+    networks:
+      - tdai-memory-stack
+    restart: unless-stopped
+
+  proxy:
+    image: ${PROXY_IMAGE:-agentmemory/memory-proxy:latest}
+    container_name: tdai-proxy
+    depends_on:
+      - memory-core
+      - memory-hub
+    ports:
+      - "${PROXY_PORT:-8096}:8096"
+    volumes:
+      - ./config/proxy.yaml:/data/config.yaml:ro
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    networks:
+      - tdai-memory-stack
+    restart: unless-stopped
+
+networks:
+  tdai-memory-stack:
+    name: tdai-memory-stack
+
+volumes:
+  tdai-memory-core-data: {}
+  tdai-panel-data: {}
