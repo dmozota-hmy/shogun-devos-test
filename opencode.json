@@ -12,15 +12,16 @@
       "git diff*": "allow",
       "git log*": "allow",
       "pwsh -NoProfile -File .opencode/pipeline/scripts/*": "allow",
+      "pwsh -NoProfile -File tools/*": "allow",
       "git push*": "deny",
       "git reset --hard*": "deny",
       "git clean*": "deny",
       "Remove-Item *": "deny",
       "Invoke-WebRequest *": "deny",
       "Invoke-Expression *": "deny",
-      "npm install*": "deny",
-      "pnpm install*": "deny",
-      "yarn install*": "deny"
+      "npm install*": "ask",
+      "pnpm install*": "ask",
+      "yarn install*": "ask"
     }
   }
 }

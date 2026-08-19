@@ -55,6 +55,8 @@ services:
       - host.docker.internal:host-gateway
     networks:
       - tdai-memory-stack
+    profiles:
+      - proxy
     restart: unless-stopped
 
 networks:

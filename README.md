@@ -25,6 +25,32 @@ optional TencentDB Agent Memory deployment.
 - Optional TencentDB Agent Memory services for a team memory hub, Wiki,
   CodeGraph, and long-term conversation assets.
 
+## Five-Minute First Run
+
+You do not need Node, npm, Docker, or an LLM key to understand the template.
+The first-run command creates a dependency-free demo, project documents, and
+local memory. It diagnoses optional services without installing anything.
+
+```powershell
+pwsh -NoProfile -File tools/Initialize-ShogunDevOS.ps1 -Root . -Demo -AcceptScaffold
+```
+
+Or, after restarting OpenCode:
+
+```text
+/shogun-init
+```
+
+It creates `demo-memory-garden/`, `docs/`, and `memory/`. Open
+`demo-memory-garden/index.html` in a browser, then run:
+
+```powershell
+pwsh -NoProfile -File .opencode/pipeline/scripts/Invoke-QualityGate.ps1 -Root .
+```
+
+The demo has no package dependencies. Shogun asks before `npm install`,
+`pnpm install`, or `yarn install`; it does not run them silently.
+
 ## The Seven Roles
 
 | Role | OpenCode agent | Model | Responsibility |
@@ -104,7 +130,8 @@ agents, commands, and skills only at startup.
 
 ### Bootstrap Project Documents
 
-In OpenCode, run:
+For guided setup, prefer `/shogun-init` or the PowerShell command above.
+`/devos-bootstrap` remains available to adapt an existing project manually. In OpenCode, run:
 
 ```text
 /devos-bootstrap
@@ -266,14 +293,23 @@ memory directly.
 ### Start The Hub
 
 ```powershell
-Copy-Item deploy/memory/.env.example deploy/memory/.env
-# Edit deploy/memory/.env and replace every REPLACE_ME value.
-pwsh -NoProfile -File deploy/memory/start.ps1
+pwsh -NoProfile -File tools/Initialize-ShogunDevOS.ps1 -Root . -ConfigureMemoryHub -StartMemoryHub
 ```
 
-The script generates `deploy/memory/config/proxy.yaml`, starts Docker Compose,
-creates an admin user key in `deploy/memory/.admin-key`, and prints service
-URLs. Those files are ignored by Git.
+The guided command creates `.env` if needed and asks only for
+`MEMORY_LLM_BASE_URL`, `MEMORY_LLM_API_KEY`, and `MEMORY_LLM_MODEL`; the key is
+entered as hidden input. Without Docker it explains what is missing and exits
+without affecting local memory. You can run `deploy/memory/start.ps1` directly
+later to diagnose or start an already configured hub.
+
+The LLM proxy is advanced opt-in only:
+
+```powershell
+pwsh -NoProfile -File deploy/memory/start.ps1 -Proxy
+```
+
+It additionally requires `PROXY_UPSTREAM_*` and a tested compatible client.
+The hub does not automatically intercept native GitHub Copilot traffic.
 
 Open `http://localhost:8125`, then create:
 
@@ -317,8 +353,9 @@ from operating.
 ## Security Model
 
 The configuration denies destructive and remote Bash operations by default,
-including `git push`, `git reset --hard`, `git clean`, package installation,
-file deletion, `Invoke-WebRequest`, and `Invoke-Expression`.
+including `git push`, `git reset --hard`, `git clean`, file deletion,
+`Invoke-WebRequest`, and `Invoke-Expression`. Package installation is `ask`:
+Shogun requests confirmation before changing dependencies.
 
 The PowerShell wrappers are allowed because they enforce state, contracts, and
 quality gates. Permission rules are an authorization layer, not a security
@@ -376,6 +413,8 @@ The included profile guard only imports `Microsoft.WinGet.CommandNotFound` when
 │   ├── pipeline/                          # state machine, contracts, scripts
 │   └── skill/lciss-devos/                 # architecture reference
 ├── deploy/memory/                         # optional TencentDB deployment
+├── templates/demo-static/                  # dependency-free learning demo
+├── tools/                                  # onboarding and diagnostics
 ├── docs/adr/                              # architectural decisions
 ├── memory/                                # created per target project
 └── .lciss/                                # ignored runtime state

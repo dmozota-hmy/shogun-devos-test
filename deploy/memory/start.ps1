@@ -1,20 +1,27 @@
 #Requires -Version 7
 <#
 .SYNOPSIS
-  Levanta el stack de TencentDB Agent Memory (memory-core + memory-hub + proxy)
-  con Docker Compose, replicando los scripts oficiales bash del upstream.
-  Genera config/proxy.yaml a partir de .env (el proxy solo lee YAML).
+  Levanta el hub opcional de TencentDB Agent Memory (memory-core + memory-hub).
+  El proxy de LLM es un opt-in avanzado mediante -Proxy; no es necesario para
+  la memoria local de Shogun ni se integra automáticamente con GitHub Copilot.
 .PARAMETER Stop
   Detiene los contenedores (mantiene volúmenes y .admin-key).
 .PARAMETER Purge
   Detiene y borra volúmenes + .admin-key (borrado completo).
+.PARAMETER Proxy
+  Incluye el proxy LLM. Requiere PROXY_UPSTREAM_* y una integración de cliente
+  compatible; no usar para GitHub Copilot nativo sin validación previa.
+.PARAMETER HubOnly
+  Alias explícito para el comportamiento predeterminado: inicia solo el hub.
 .EXAMPLE
   .\start.ps1
   .\start.ps1 -Stop
 #>
 param(
     [switch]$Stop,
-    [switch]$Purge
+    [switch]$Purge,
+    [switch]$Proxy,
+    [switch]$HubOnly
 )
 
 $ErrorActionPreference = 'Stop'
@@ -28,6 +35,20 @@ function Get-EnvValue {
     $m = Select-String -Path $EnvFile -Pattern "^\s*$Key\s*=\s*(.*)$" | Select-Object -Last 1
     if ($null -eq $m) { return '' }
     return $m.Matches[0].Groups[1].Value.Trim()
+}
+
+function Test-DockerReady {
+    $docker = Get-Command -Name docker -ErrorAction SilentlyContinue
+    if (-not $docker) {
+        Write-Warning 'Docker CLI no esta instalado. Instala Docker Desktop para usar el hub opcional de TencentDB.'
+        return $false
+    }
+    try {
+        docker info *> $null
+        if ($LASTEXITCODE -eq 0) { return $true }
+    } catch { }
+    Write-Warning 'Docker Desktop esta instalado pero no esta iniciado. Arrancalo y vuelve a ejecutar este comando.'
+    return $false
 }
 
 function Invoke-AdminInit {
@@ -61,32 +82,42 @@ function Invoke-AdminInit {
 }
 
 if ($Purge) {
+    if (-not (Test-DockerReady)) { return }
     docker compose -f (Join-Path $ScriptDir 'docker-compose.yml') down -v
     Remove-Item $AdminKeyFile -ErrorAction SilentlyContinue
     Write-Host 'Stack detenido y volúmenes eliminados.' -ForegroundColor Green
     exit 0
 }
 if ($Stop) {
+    if (-not (Test-DockerReady)) { return }
     docker compose -f (Join-Path $ScriptDir 'docker-compose.yml') down
     Write-Host 'Stack detenido (volúmenes conservados).' -ForegroundColor Green
     exit 0
 }
 
+if (-not (Test-DockerReady)) { return }
+
 if (-not (Test-Path $EnvFile)) {
-    Write-Error "No existe .env — copia .env.example a .env y rellena los valores."
+    Copy-Item -LiteralPath (Join-Path $ScriptDir '.env.example') -Destination $EnvFile
+    Write-Warning "Se ha creado $EnvFile. Configura MEMORY_LLM_BASE_URL, MEMORY_LLM_API_KEY y MEMORY_LLM_MODEL antes de iniciar el hub."
+    return
 }
 
-$required = @('MEMORY_LLM_BASE_URL', 'MEMORY_LLM_API_KEY', 'MEMORY_LLM_MODEL', 'PROXY_UPSTREAM_URL', 'PROXY_UPSTREAM_API_KEY')
+$required = @('MEMORY_LLM_BASE_URL', 'MEMORY_LLM_API_KEY', 'MEMORY_LLM_MODEL')
+if ($Proxy) { $required += @('PROXY_UPSTREAM_URL', 'PROXY_UPSTREAM_API_KEY', 'PROXY_UPSTREAM_MODEL') }
 $missing = @($required | Where-Object { (Get-EnvValue $_) -in @('', 'REPLACE_ME') })
 if ($missing.Count -gt 0) {
-    Write-Error "Faltan valores en .env: $($missing -join ', ')"
+    Write-Warning "El hub no se inicio. Faltan valores en .env: $($missing -join ', ')"
+    Write-Host 'Para el hub basico solo necesitas MEMORY_LLM_BASE_URL, MEMORY_LLM_API_KEY y MEMORY_LLM_MODEL.' -ForegroundColor Yellow
+    return
 }
 
-# ── Generar config/proxy.yaml (mismo contenido que start-proxy.sh oficial) ──
-New-Item -ItemType Directory -Path (Join-Path $ScriptDir 'config') -Force | Out-Null
-$gwKey = Get-EnvValue 'MEMORY_CORE_GATEWAY_API_KEY'
-if (-not $gwKey) { $gwKey = 'local' }
-$proxyConfig = @"
+if ($Proxy) {
+    # ── Generar config/proxy.yaml (solo para integraciones avanzadas) ─────────
+    New-Item -ItemType Directory -Path (Join-Path $ScriptDir 'config') -Force | Out-Null
+    $gwKey = Get-EnvValue 'MEMORY_CORE_GATEWAY_API_KEY'
+    if (-not $gwKey) { $gwKey = 'local' }
+    $proxyConfig = @"
 # Generado por start.ps1 a partir de .env — no editar a mano.
 server:
   host: 0.0.0.0
@@ -148,12 +179,18 @@ injection:
 redis:
   enabled: false
 "@
-Set-Content -Path $ProxyConfigFile -Value $proxyConfig -Encoding utf8
-Write-Host "[config] $ProxyConfigFile generado" -ForegroundColor DarkGray
+    Set-Content -Path $ProxyConfigFile -Value $proxyConfig -Encoding utf8
+    Write-Host "[config] $ProxyConfigFile generado" -ForegroundColor DarkGray
+}
 
 # ── Levantar stack ───────────────────────────────────────────────────────────
-Write-Host 'Levantando memory-core + memory-hub + proxy...' -ForegroundColor Cyan
-docker compose -f (Join-Path $ScriptDir 'docker-compose.yml') up -d
+if ($Proxy) {
+    Write-Host 'Levantando memory-core + memory-hub + proxy...' -ForegroundColor Cyan
+    docker compose -f (Join-Path $ScriptDir 'docker-compose.yml') --profile proxy up -d
+} else {
+    Write-Host 'Levantando memory-core + memory-hub...' -ForegroundColor Cyan
+    docker compose -f (Join-Path $ScriptDir 'docker-compose.yml') up -d memory-core memory-hub
+}
 if ($LASTEXITCODE -ne 0) { Write-Error 'docker compose up fallo.' }
 
 # ── Esperar health de memory-core ────────────────────────────────────────────
@@ -173,16 +210,21 @@ if (-not $ok) { Write-Warning "memory-core no respondio en /health (¿puerto $co
 $adminKey = Invoke-AdminInit -Port $corePort
 
 # ── Resumen ──────────────────────────────────────────────────────────────────
-$proxyPort = Get-EnvValue 'PROXY_PORT'
-if (-not $proxyPort) { $proxyPort = '8096' }
 Write-Host ''
 Write-Host '=== TencentDB Agent Memory UP ===' -ForegroundColor Green
 Write-Host "  Panel UI     : http://localhost:$($(Get-EnvValue 'PANEL_PORT'))/" -NoNewline
 Write-Host "  (login user_key: $($adminKey.Substring(0, 11))****$($adminKey.Substring($adminKey.Length - 4)))" -ForegroundColor DarkGray
 Write-Host "  Knowledge    : http://localhost:$($(Get-EnvValue 'KNOWLEDGE_PORT'))/v3/"
 Write-Host "  MemoryCore   : http://localhost:$corePort/"
-Write-Host "  Proxy        : http://localhost:$proxyPort/"
+if ($Proxy) {
+    $proxyPort = Get-EnvValue 'PROXY_PORT'
+    if (-not $proxyPort) { $proxyPort = '8096' }
+    Write-Host "  Proxy        : http://localhost:$proxyPort/"
+}
 Write-Host ''
-Write-Host 'Siguiente: entra en el panel, crea Team -> Agent -> Task y copia sus' -ForegroundColor Yellow
-Write-Host 'ids a las variables TDAI_USER_KEY / TDAI_TEAM_ID / TDAI_AGENT_ID /' -ForegroundColor Yellow
-Write-Host 'TDAI_TASK_ID de .env (o del entorno), y reinicia opencode.' -ForegroundColor Yellow
+Write-Host 'Siguiente: entra en el panel y crea Team -> Agent -> Task para organizar los activos compartidos.' -ForegroundColor Yellow
+if ($Proxy) {
+    Write-Host 'El proxy requiere TDAI_USER_KEY, TDAI_TEAM_ID, TDAI_AGENT_ID y TDAI_TASK_ID; GitHub Copilot nativo no los usa.' -ForegroundColor Yellow
+} else {
+    Write-Host 'El hub es opcional: Shogun sigue funcionando con memoria local aunque el hub se detenga.' -ForegroundColor Yellow
+}

@@ -2,3 +2,5 @@
 .lciss/lock/
 .lciss/outputs/
 .lciss/logs/
+.opencode/node_modules/
+.shogun/

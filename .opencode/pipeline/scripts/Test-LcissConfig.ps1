@@ -32,7 +32,9 @@ foreach ($path in @(
     '.opencode\pipeline\AGENT_OUTPUT_PROTOCOL.md',
     '.opencode\pipeline\scripts\Invoke-LcissPipeline.ps1',
     '.opencode\pipeline\scripts\Invoke-QualityGate.ps1',
-    '.opencode\pipeline\scripts\Test-AgentOutput.ps1'
+    '.opencode\pipeline\scripts\Test-AgentOutput.ps1',
+    'tools\Initialize-ShogunDevOS.ps1',
+    'tools\Test-ShogunPrerequisites.ps1'
 )) {
     if (-not (Test-Path -LiteralPath (Join-Path $rootPath $path))) { $errors.Add("Missing LCISS enforcement asset '$path'.") }
 }
@@ -50,9 +52,9 @@ foreach ($entry in $expected.GetEnumerator()) {
     $path = Join-Path $rootPath ".opencode\agent\$($entry.Key)"
     if (-not (Test-Path -LiteralPath $path)) { $errors.Add("Missing agent file '$($entry.Key)'."); continue }
     $content = Get-Content -LiteralPath $path -Raw
-    if ($content -notmatch "(?m)^mode: $($entry.Value)$") { $errors.Add("Agent '$($entry.Key)' must use mode '$($entry.Value)'.") }
-    if ($content -notmatch '(?m)^model: github-copilot/gpt-5\.6-(terra|luna)$') { $errors.Add("Agent '$($entry.Key)' has an unsupported Copilot model.") }
-    if ($entry.Value -eq 'subagent' -and $content -notmatch '(?m)^  task: deny$') { $errors.Add("Subagent '$($entry.Key)' must deny task delegation.") }
+    if ($content -notmatch "(?m)^mode: $($entry.Value)\r?$") { $errors.Add("Agent '$($entry.Key)' must use mode '$($entry.Value)'.") }
+    if ($content -notmatch '(?m)^model: github-copilot/gpt-5\.6-(terra|luna)\r?$') { $errors.Add("Agent '$($entry.Key)' has an unsupported Copilot model.") }
+    if ($entry.Value -eq 'subagent' -and $content -notmatch '(?m)^  task: deny\r?$') { $errors.Add("Subagent '$($entry.Key)' must deny task delegation.") }
 }
 
 if ($errors.Count) {

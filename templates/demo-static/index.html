@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="en">
+  <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Memory Garden | Shogun DevOS</title><link rel="stylesheet" href="styles.css"></head>
+  <body>
+    <main>
+      <p class="eyebrow">SHOGUN DEVOS / LOCAL MEMORY DEMO</p>
+      <h1>Memory Garden</h1>
+      <p class="intro">A tiny, dependency-free application for observing how a project accumulates facts, decisions, and lessons.</p>
+      <section class="panel"><label for="memory">Plant a memory</label><div class="row"><input id="memory" placeholder="Example: The demo must remain dependency-free"><button id="save">Remember</button></div><p id="status" role="status">Nothing recorded in this browser yet.</p></section>
+      <section class="panel"><div class="section-heading"><h2>Remembered here</h2><button id="clear" class="quiet">Clear browser memories</button></div><ul id="memories"></ul></section>
+      <aside><strong>Project memory:</strong> Open <code>memory/INDEX.md</code> and <code>docs/learning-log.md</code> to see the durable, reviewed memory layer maintained by Shogun DevOS.</aside>
+    </main><script src="app.js"></script>
+  </body>
+</html>
