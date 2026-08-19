@@ -1,0 +1,46 @@
+{
+  "schemaVersion": "1.0",
+  "agents": {
+    "context": "knowledge",
+    "architecture": "architect",
+    "implementation": "developer",
+    "remediation": "developer",
+    "review": "reviewer"
+  },
+  "transitions": {
+    "context": ["architecture", "implementation", "blocked", "failed"],
+    "architecture": ["implementation", "blocked", "failed"],
+    "implementation": ["quality-gate", "blocked", "failed"],
+    "quality-gate": ["review", "remediation", "blocked", "failed"],
+    "review": ["completed", "remediation", "blocked", "failed"],
+    "remediation": ["quality-gate", "blocked", "failed"],
+    "completed": [],
+    "blocked": [],
+    "failed": [],
+    "escalated": []
+  },
+  "qualityGate": {
+    "test": {
+      "required": false,
+      "command": "",
+      "notApplicableReason": "Este repositorio contiene configuracion de OpenCode y no tiene suite de tests."
+    },
+    "lint": {
+      "required": false,
+      "command": "",
+      "notApplicableReason": "Este repositorio contiene configuracion de OpenCode y no tiene linter configurado."
+    },
+    "build": {
+      "required": false,
+      "command": "",
+      "notApplicableReason": "Este repositorio contiene configuracion de OpenCode y no tiene artefacto compilable."
+    }
+  },
+  "limits": {
+    "maxRemediationAttempts": 2,
+    "maxConsecutiveFailures": 3
+  },
+  "lock": {
+    "staleAfterMinutes": 60
+  }
+}

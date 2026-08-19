@@ -1,0 +1,4 @@
+.lciss/state/
+.lciss/lock/
+.lciss/outputs/
+.lciss/logs/

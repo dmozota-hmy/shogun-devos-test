@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lciss.local/contracts/agent-output.v1.schema.json",
+  "title": "LCISS Agent Output v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contractVersion",
+    "runId",
+    "taskId",
+    "agent",
+    "status",
+    "summary",
+    "artifacts",
+    "qualityEvidence",
+    "next",
+    "issues",
+    "timestampUtc"
+  ],
+  "properties": {
+    "contractVersion": { "const": "1.0" },
+    "runId": { "type": "string", "minLength": 1 },
+    "taskId": { "type": "string", "minLength": 1 },
+    "agent": {
+      "enum": ["orchestrator", "architect", "planner", "developer", "reviewer", "refactor", "knowledge"]
+    },
+    "status": { "enum": ["succeeded", "failed", "blocked", "rejected"] },
+    "summary": { "type": "string", "minLength": 1 },
+    "artifacts": { "type": "array", "items": { "type": "string" } },
+    "qualityEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tests", "lint", "build"],
+      "properties": {
+        "tests": { "enum": ["passed", "failed", "not-run", "not-applicable"] },
+        "lint": { "enum": ["passed", "failed", "not-run", "not-applicable"] },
+        "build": { "enum": ["passed", "failed", "not-run", "not-applicable"] }
+      }
+    },
+    "next": {
+      "enum": ["context", "architecture", "implementation", "quality-gate", "review", "remediation", "completed", "blocked", "failed", "escalated"]
+    },
+    "issues": { "type": "array", "items": { "type": "string" } },
+    "reviewVerdict": { "enum": ["APROBADO", "CAMBIOS REQUERIDOS", "RECHAZADO"] },
+    "timestampUtc": { "type": "string", "format": "date-time" }
+  }
+}

@@ -210,13 +210,13 @@ El sistema se integra con un Memory Hub (TencentDB Agent Memory) como memoria pe
 | memory-hub | `8125` (panel) / `8424` (knowledge) | panel de control + Wiki/CodeGraph |
 | proxy | `8096` | inyecta memoria/skills/knowledge en cada llamada LLM |
 
-**Flujo:** todos los agentes usan el provider `tdai-memory` (proxy). El proxy registra la sesión contra un Team/Agent/Task vía headers (`x-team-id`, `x-agent-id`, `x-task-id`, `x-conversation-id`), inyecta L2/L3 + Skills + Wiki/CodeGraph en el prompt, y captura la conversación como L0. El pipeline extrae L1→L2→L3 de forma asíncrona.
+**Flujo:** los agentes usan el provider nativo `github-copilot` y los modelos válidos `gpt-5.6-terra` o `gpt-5.6-luna`. El proxy TencentDB es opcional: cuando se configura como endpoint del modelo, registra la sesión contra Team/Agent/Task vía headers (`x-team-id`, `x-agent-id`, `x-task-id`, `x-conversation-id`), inyecta L2/L3 + Skills + Wiki/CodeGraph y captura L0.
 
 **Puesta en marcha:**
 
 1. `deploy/memory/.env.example` → `.env` (dos grupos LLM: `MEMORY_LLM_*` interno y `PROXY_UPSTREAM_*` del agente).
 2. `.\start.ps1` — genera `config/proxy.yaml`, levanta el stack y crea el admin (`deploy/memory/.admin-key`).
 3. Panel `http://localhost:8125` → crear Team → Agent → Task; copiar `user_key` y los ids a `TDAI_USER_KEY`, `TDAI_TEAM_ID`, `TDAI_AGENT_ID`, `TDAI_TASK_ID` (variables de entorno o `.env`).
-4. Reiniciar opencode. Los modelos `tdai-memory/gpt-5.6-*` fallback: si el proxy no está levantado, cambiar el `model:` de los agentes de vuelta a `openai/gpt-5.6-*`.
+4. Reiniciar opencode. Para usar el proxy como transporte de memoria hay que cambiar explícitamente los modelos de los agentes al provider compatible configurado; por defecto los agentes funcionan directamente con `github-copilot`.
 
-**Notas:** el `model` id se reenvía tal cual al upstream (`PROXY_UPSTREAM_MODEL`) — el upstream debe servir los ids `gpt-5.6-sol/terra/luna` o renombrarse en `opencode.json`. `x-conversation-id` es estático por config: cambiar el valor por conversación si se quiere aislar contextos de memoria.
+**Notas:** el catálogo Copilot actual no expone variantes `-medium`/`-high`: los IDs válidos son `github-copilot/gpt-5.6-terra` y `github-copilot/gpt-5.6-luna`. `x-conversation-id` es estático por config cuando se usa el proxy: cambiar el valor por conversación si se quiere aislar contextos de memoria.

@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lciss.local/contracts/cycle-state.v1.schema.json",
+  "title": "LCISS Cycle State v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "runId",
+    "taskId",
+    "state",
+    "status",
+    "activeAgent",
+    "remediationAttempts",
+    "consecutiveFailures",
+    "startedAtUtc",
+    "updatedAtUtc"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "runId": { "type": "string", "minLength": 1 },
+    "taskId": { "type": "string", "minLength": 1 },
+    "state": {
+      "enum": ["context", "architecture", "implementation", "quality-gate", "review", "remediation", "completed", "blocked", "failed", "escalated"]
+    },
+    "status": { "enum": ["active", "completed", "blocked", "failed", "escalated"] },
+    "activeAgent": { "type": ["string", "null"] },
+    "remediationAttempts": { "type": "integer", "minimum": 0 },
+    "consecutiveFailures": { "type": "integer", "minimum": 0 },
+    "startedAtUtc": { "type": "string", "format": "date-time" },
+    "updatedAtUtc": { "type": "string", "format": "date-time" }
+  }
+}
