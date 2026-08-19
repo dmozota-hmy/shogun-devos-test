@@ -37,7 +37,8 @@ Write-Host "Memory Hub: $($report.memoryHub.status)." -ForegroundColor Yellow
 Write-Host $report.copilotProxyIntegration.message -ForegroundColor DarkYellow
 
 $created = [System.Collections.Generic.List[string]]::new()
-if ($Demo -or (Confirm-Action -Question 'Create the dependency-free memory demo?' -Accepted:$AcceptScaffold)) {
+$createDemo = if ($Demo) { $true } elseif ($ConfigureMemoryHub -or $StartMemoryHub) { $false } else { Confirm-Action -Question 'Create the dependency-free memory demo?' -Accepted:$AcceptScaffold }
+if ($createDemo) {
     $templates = Join-Path $rootPath 'templates\demo-static'
     $target = Join-Path $rootPath 'demo-memory-garden'
     Get-ChildItem -LiteralPath $templates -File | ForEach-Object { $destination = Join-Path $target $_.Name; if (New-FileIfMissing -Path $destination -Content (Get-Content -LiteralPath $_.FullName -Raw)) { $created.Add($destination) } }
@@ -69,7 +70,7 @@ $documents = [ordered]@{
 foreach ($entry in $documents.GetEnumerator()) { $path = Join-Path $rootPath $entry.Key; if (New-FileIfMissing -Path $path -Content $entry.Value) { $created.Add($path) } }
 
 $memoryEnv = Join-Path $rootPath 'deploy\memory\.env'
-if ($ConfigureMemoryHub -or ((-not (Test-Path -LiteralPath $memoryEnv)) -and $report.prerequisites.docker.daemonReady -and (Confirm-Action -Question 'Prepare the optional TencentDB Memory Hub configuration?' -Accepted:$false))) {
+if ($report.prerequisites.docker.daemonReady -and ($ConfigureMemoryHub -or ((-not (Test-Path -LiteralPath $memoryEnv)) -and (Confirm-Action -Question 'Prepare the optional TencentDB Memory Hub configuration?' -Accepted:$false)))) {
     if (-not (Test-Path -LiteralPath $memoryEnv)) { Copy-Item -LiteralPath (Join-Path $rootPath 'deploy\memory\.env.example') -Destination $memoryEnv; $created.Add($memoryEnv) }
     Write-Host 'The hub needs one OpenAI-compatible extraction LLM. The proxy is not configured here.' -ForegroundColor Yellow
     $baseUrl = Read-Host 'MEMORY_LLM_BASE_URL (example: https://api.openai.com/v1)'
@@ -79,6 +80,9 @@ if ($ConfigureMemoryHub -or ((-not (Test-Path -LiteralPath $memoryEnv)) -and $re
     Set-EnvValue -Path $memoryEnv -Key 'MEMORY_LLM_API_KEY' -Value $apiKey
     Set-EnvValue -Path $memoryEnv -Key 'MEMORY_LLM_MODEL' -Value $model
     Write-Host "Memory Hub configuration saved to $memoryEnv. The file is ignored by Git." -ForegroundColor Green
+}
+if (($ConfigureMemoryHub -or $StartMemoryHub) -and -not $report.prerequisites.docker.daemonReady) {
+    Write-Warning 'TencentDB no se ha configurado: instala e inicia Docker Desktop y vuelve a ejecutar el mismo comando.'
 }
 if ($StartMemoryHub) {
     if (-not $report.prerequisites.docker.daemonReady) { Write-Warning 'The Memory Hub was not started: Docker Desktop is unavailable or stopped.' }
