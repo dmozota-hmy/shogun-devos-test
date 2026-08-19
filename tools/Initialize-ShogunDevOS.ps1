@@ -11,7 +11,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 function Confirm-Action { param([string]$Question, [switch]$Accepted); if ($Accepted) { return $true }; (Read-Host "$Question [y/N]") -match '^(y|yes|s|si)$' }
-function New-FileIfMissing { param([string]$Path, [string]$Content); if (Test-Path -LiteralPath $Path) { return $false }; New-Item -ItemType Directory -Path (Split-Path -Parent $Path) -Force | Out-Null; Set-Content -LiteralPath $Path -Value $Content -Encoding utf8; return $true }
+function New-FileIfMissing { param([string]$Path, [string]$Content); if (Test-Path -LiteralPath $Path) { return $false }; New-Item -ItemType Directory -Path (Split-Path -Parent $Path) -Force | Out-Null; Set-Content -LiteralPath $Path -Value $Content.TrimEnd("`r", "`n") -Encoding utf8; return $true }
 function Set-EnvValue {
     param([string]$Path, [string]$Key, [string]$Value)
     if ([string]::IsNullOrWhiteSpace($Value) -or $Value.Contains("`n") -or $Value.Contains("`r")) { throw "$Key must be a single non-empty line." }
@@ -58,7 +58,13 @@ $documents = [ordered]@{
     'docs\technical-debt-system.md' = "# Technical Debt System`n`nRecord deferred work with impact, owner, and exit criteria.`n"
     'docs\evolution-system.md' = "# Evolution System`n`nArchitecture decisions are recorded under `docs/adr/`.`n"
     'docs\refactor-system.md' = "# Refactor System`n`nRefactors require green quality gates before and after the change.`n"
-    'memory\INDEX.md' = "# Memory Index`n`n- `patterns/` — reusable practices`n- `decisions/` — design decisions`n- `bugs/` — resolved incidents`n"
+    'memory\INDEX.md' = @'
+# Memory Index
+
+- `patterns/` — reusable practices
+- `decisions/` — design decisions
+- `bugs/` — resolved incidents
+'@
 }
 foreach ($entry in $documents.GetEnumerator()) { $path = Join-Path $rootPath $entry.Key; if (New-FileIfMissing -Path $path -Content $entry.Value) { $created.Add($path) } }
 
