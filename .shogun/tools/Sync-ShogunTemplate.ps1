@@ -33,7 +33,8 @@ function Resolve-TemplateSource {
     }
 
     $script:temporarySource = Join-Path ([System.IO.Path]::GetTempPath()) ("shogun-template-{0}" -f [guid]::NewGuid())
-    git clone --depth 1 --branch $Branch $script:temporarySource
+    $cloneTarget = $script:temporarySource
+    & git clone --depth 1 --branch $Branch -- $Repository $cloneTarget
     if ($LASTEXITCODE -ne 0) { throw "Unable to clone template from $Repository@$Branch" }
     return $script:temporarySource
 }
@@ -113,5 +114,5 @@ try {
     [ordered]@{ status = 'succeeded'; source = $templateRoot; preserved = @('.shogun/config/*'); synchronized = @('.opencode/*', '.shogun/deploy/*', '.shogun/templates/*', '.shogun/tools/*', 'opencode.json') } | ConvertTo-Json -Depth 5
 }
 finally {
-    if ($temporarySource -and (Test-Path -LiteralPath $temporarySource)) { Remove-Item -LiteralPath $temporarySource -Recurse -Force -ErrorAction SilentlyContinue }
+    if ($script:temporarySource -and (Test-Path -LiteralPath $script:temporarySource)) { Remove-Item -LiteralPath $script:temporarySource -Recurse -Force -ErrorAction SilentlyContinue }
 }
