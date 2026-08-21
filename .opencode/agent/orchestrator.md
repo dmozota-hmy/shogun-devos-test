@@ -37,6 +37,7 @@ Solo tú puedes delegar trabajo. Los subagentes nunca deben invocar `task` ni in
 
 1. Selecciona la tarea del backlog: estado `ready`, mayor prioridad con dependencias resueltas.
 2. Consulta a `knowledge` (task tool) para contexto histórico relevante de la tarea.
+   `knowledge` debe usar el MCP `shogun-memory` (`tdai_memory_recall` o `tdai_conversation_search`) antes de continuar; si no hay resultados, debe declararlo explícitamente.
 3. Si hay impacto arquitectónico, consulta a `architect` antes de implementar.
 4. Despacha a `developer` (task tool) con: tarea completa, criterios de aceptación y contexto.
 5. Despacha a `reviewer` (task tool) el código resultante para validación.
@@ -44,6 +45,7 @@ Solo tú puedes delegar trabajo. Los subagentes nunca deben invocar `task` ni in
 7. Si RECHAZADO → devuelve el feedback estructurado a `developer` (máximo 2 iteraciones).
 8. Actualiza `docs/backlog.md` (estado `in-progress`/`done`/`blocked`).
 9. Registra el resultado del ciclo en `docs/learning-log.md`.
+10. Después de un review APROBADO, solicita a `knowledge` usar `tdai_memory_capture` para persistir las decisiones y aprendizajes verificados.
 
 ## Manejo de fallos
 

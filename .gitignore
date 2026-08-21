@@ -3,4 +3,5 @@
 .lciss/outputs/
 .lciss/logs/
 .opencode/node_modules/
+.shogun-memory/
 .shogun/

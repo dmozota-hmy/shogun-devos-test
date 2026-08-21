@@ -21,6 +21,14 @@ function Set-EnvValue {
     if ($content -match $pattern) { $content = [regex]::Replace($content, $pattern, $replacement) } else { $content = "$content`n$replacement`n" }
     Set-Content -LiteralPath $Path -Value $content -Encoding utf8
 }
+
+function Normalize-LlmBaseUrl {
+    param([string]$Value)
+    $normalized = $Value.Trim().TrimEnd('/')
+    if ($normalized -match '\.cognitiveservices\.azure\.com$') { return "$normalized/openai/v1" }
+    if ($normalized -match '\.openai\.azure\.com$') { return "$normalized/openai/v1" }
+    return $normalized
+}
 function Read-PlainSecret {
     param([string]$Prompt)
     $secure = Read-Host -Prompt $Prompt -AsSecureString
@@ -67,13 +75,15 @@ $documents = [ordered]@{
 - `bugs/` — resolved incidents
 '@
 }
-foreach ($entry in $documents.GetEnumerator()) { $path = Join-Path $rootPath $entry.Key; if (New-FileIfMissing -Path $path -Content $entry.Value) { $created.Add($path) } }
+if ($createDemo -or (-not $ConfigureMemoryHub -and -not $StartMemoryHub)) {
+    foreach ($entry in $documents.GetEnumerator()) { $path = Join-Path $rootPath $entry.Key; if (New-FileIfMissing -Path $path -Content $entry.Value) { $created.Add($path) } }
+}
 
 $memoryEnv = Join-Path $rootPath 'deploy\memory\.env'
-if ($report.prerequisites.docker.daemonReady -and ($ConfigureMemoryHub -or ((-not (Test-Path -LiteralPath $memoryEnv)) -and (Confirm-Action -Question 'Prepare the optional TencentDB Memory Hub configuration?' -Accepted:$false)))) {
+if ($report.prerequisites.docker.daemonReady -and $ConfigureMemoryHub -and (-not $report.memoryHub.extractionLlmConfigured)) {
     if (-not (Test-Path -LiteralPath $memoryEnv)) { Copy-Item -LiteralPath (Join-Path $rootPath 'deploy\memory\.env.example') -Destination $memoryEnv; $created.Add($memoryEnv) }
     Write-Host 'The hub needs one OpenAI-compatible extraction LLM. The proxy is not configured here.' -ForegroundColor Yellow
-    $baseUrl = Read-Host 'MEMORY_LLM_BASE_URL (example: https://api.openai.com/v1)'
+    $baseUrl = Normalize-LlmBaseUrl (Read-Host 'MEMORY_LLM_BASE_URL (Azure: https://resource.cognitiveservices.azure.com/openai/v1)')
     $apiKey = Read-PlainSecret -Prompt 'MEMORY_LLM_API_KEY (hidden input)'
     $model = Read-Host 'MEMORY_LLM_MODEL (example: gpt-4o-mini)'
     Set-EnvValue -Path $memoryEnv -Key 'MEMORY_LLM_BASE_URL' -Value $baseUrl
@@ -89,4 +99,7 @@ if ($StartMemoryHub) {
     elseif (-not (Test-Path -LiteralPath $memoryEnv)) { Write-Warning 'The Memory Hub was not started: run again with -ConfigureMemoryHub and set the three MEMORY_LLM_* values.' }
     else { & (Join-Path $rootPath 'deploy\memory\start.ps1') -HubOnly }
 }
-[ordered]@{ root = $rootPath; created = $created; localMemory = 'ready'; demo = if (Test-Path -LiteralPath (Join-Path $rootPath 'demo-memory-garden\index.html')) { 'ready' } else { 'skipped' }; memoryHub = if ($StartMemoryHub) { 'requested' } else { $report.memoryHub.status }; copilotProxyIntegration = 'not-configured-not-guaranteed'; nextStep = 'Open demo-memory-garden/index.html, then run /devos for DEMO-001 in OpenCode.' } | ConvertTo-Json -Depth 10
+$demoReady = Test-Path -LiteralPath (Join-Path $rootPath 'demo-memory-garden\index.html')
+$nextStep = if ($StartMemoryHub -and -not $report.prerequisites.docker.daemonReady) { 'Start Docker Desktop and run this same command again.' } elseif ($StartMemoryHub) { 'Open http://localhost:8125 and create a Team, Agent, and Task.' } elseif ($demoReady) { 'Open demo-memory-garden/index.html, then run /devos for DEMO-001 in OpenCode.' } else { 'Run /shogun-init or rerun with -Demo to create the learning demo.' }
+$memoryStatus = if ($StartMemoryHub -and -not $report.prerequisites.docker.daemonReady) { 'not-started-docker-unavailable' } elseif ($StartMemoryHub) { 'requested' } else { $report.memoryHub.status }
+[ordered]@{ root = $rootPath; created = $created; localMemory = 'ready'; demo = if ($demoReady) { 'ready' } else { 'skipped' }; memoryHub = $memoryStatus; copilotProxyIntegration = 'not-configured-not-guaranteed'; nextStep = $nextStep } | ConvertTo-Json -Depth 10

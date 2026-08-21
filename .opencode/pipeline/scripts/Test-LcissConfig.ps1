@@ -38,6 +38,7 @@ foreach ($path in @(
 )) {
     if (-not (Test-Path -LiteralPath (Join-Path $rootPath $path))) { $errors.Add("Missing LCISS enforcement asset '$path'.") }
 }
+if (-not (Test-Path -LiteralPath (Join-Path $rootPath '.opencode\mcp\shogun-memory.mjs'))) { $errors.Add("Missing TencentDB MCP connector '.opencode/mcp/shogun-memory.mjs'.") }
 
 $expected = @{
     'orchestrator.md' = 'primary'

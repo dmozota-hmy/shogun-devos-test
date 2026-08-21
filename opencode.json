@@ -4,6 +4,15 @@
   "subagent_depth": 1,
   "enabled_providers": ["github-copilot"],
   "instructions": [".opencode/pipeline/AGENT_OUTPUT_PROTOCOL.md"],
+  "mcp": {
+    "shogun-memory": {
+      "type": "local",
+      "command": ["node", ".opencode/mcp/shogun-memory.mjs"],
+      "enabled": true,
+      "cwd": ".",
+      "timeout": 15000
+    }
+  },
   "permission": {
     "task": "allow",
     "bash": {
