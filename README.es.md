@@ -37,7 +37,7 @@ Puedes usar Shogun sin Docker ni otro LLM. La memoria local siempre funciona.
 6. Ejecuta:
 
 ```powershell
-pwsh -NoProfile -File tools/Initialize-ShogunDevOS.ps1 -Root . -Demo -AcceptScaffold
+pwsh -NoProfile -File .shogun/tools/Initialize-ShogunDevOS.ps1 -Root . -Demo -AcceptScaffold
 ```
 
 También puedes ejecutar desde OpenCode:
@@ -82,21 +82,30 @@ Skills y CodeGraph.
 Ejecuta esto solo si tienes Docker Desktop:
 
 ```powershell
-pwsh -NoProfile -File tools/Initialize-ShogunDevOS.ps1 -Root . -ConfigureMemoryHub -StartMemoryHub
+pwsh -NoProfile -File .shogun/tools/Initialize-ShogunDevOS.ps1 -Root . -ConfigureMemoryHub -StartMemoryHub
 ```
 
 Solo solicita `MEMORY_LLM_BASE_URL`, `MEMORY_LLM_API_KEY` y
-`MEMORY_LLM_MODEL`. Se guardan en `deploy/memory/.env`, ignorado por Git.
+`MEMORY_LLM_MODEL`. Se guardan en `.shogun/config/.env`, ignorado por Git.
 
 TencentDB **no** intercepta automáticamente GitHub Copilot. Es un hub opcional;
 si no está disponible, los agentes continúan usando memoria local.
+
+## Actualizar La Plantilla
+
+```powershell
+pwsh -NoProfile -File .shogun/tools/Sync-ShogunTemplate.ps1 -Root . -Source Auto
+```
+
+Reemplaza el harness y runtime de Shogun, pero conserva `.shogun/config/`. No
+modifica la aplicación, `docs/` ni `memory/`. Usa `-WhatIf` para previsualizarlo.
 
 ## Comandos Útiles
 
 ```powershell
 pwsh -NoProfile -File .opencode/pipeline/scripts/Test-LcissConfig.ps1 -Root .
 pwsh -NoProfile -File .opencode/pipeline/scripts/Invoke-QualityGate.ps1 -Root .
-pwsh -NoProfile -File tools/Test-ShogunPrerequisites.ps1 -Root .
+pwsh -NoProfile -File .shogun/tools/Test-ShogunPrerequisites.ps1 -Root .
 ```
 
 Reinicia OpenCode después de cambiar `opencode.json`, `.opencode/` o agentes.

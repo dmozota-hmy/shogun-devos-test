@@ -202,7 +202,7 @@ Cada agente tiene un rol único, inputs/outputs definidos y reglas de colaboraci
 
 ## Memoria externa (TencentDB Agent Memory)
 
-El sistema se integra con un Memory Hub (TencentDB Agent Memory) como memoria persistente de equipo. El despliegue vive en `deploy/memory/` de este repo.
+El sistema se integra con un Memory Hub (TencentDB Agent Memory) como memoria persistente de equipo. El despliegue vive en `.shogun/deploy/memory/` y la configuración local en `.shogun/config/`.
 
 | Servicio | Puertos | Uso |
 |---|---|---|
@@ -214,8 +214,8 @@ El sistema se integra con un Memory Hub (TencentDB Agent Memory) como memoria pe
 
 **Puesta en marcha:**
 
-1. `deploy/memory/.env.example` → `.env` (dos grupos LLM: `MEMORY_LLM_*` interno y `PROXY_UPSTREAM_*` del agente).
-2. `.\start.ps1` — genera `config/proxy.yaml`, levanta el stack y crea el admin (`deploy/memory/.admin-key`).
+1. `.shogun/config/.env.example` → `.shogun/config/.env` (dos grupos LLM: `MEMORY_LLM_*` interno y `PROXY_UPSTREAM_*` del agente).
+2. `.shogun/deploy/memory/start.ps1` — genera `.shogun/config/proxy.yaml`, levanta el stack y crea el admin (`.shogun/config/.admin-key`).
 3. Panel `http://localhost:8125` → crear Team → Agent → Task; copiar `user_key` y los ids a `TDAI_USER_KEY`, `TDAI_TEAM_ID`, `TDAI_AGENT_ID`, `TDAI_TASK_ID` (variables de entorno o `.env`).
 4. Reiniciar opencode. Para usar el proxy como transporte de memoria hay que cambiar explícitamente los modelos de los agentes al provider compatible configurado; por defecto los agentes funcionan directamente con `github-copilot`.
 

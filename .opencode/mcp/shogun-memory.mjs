@@ -4,7 +4,7 @@ import fs from "node:fs"
 import path from "node:path"
 
 function loadConfig() {
-  const configPath = process.env.TDAI_MEMORY_CONFIG || path.join(process.cwd(), ".shogun-memory", "config.json")
+  const configPath = process.env.TDAI_MEMORY_CONFIG || path.join(process.cwd(), ".shogun", "config", "memory.json")
   try {
     return JSON.parse(fs.readFileSync(configPath, "utf8"))
   } catch {
@@ -55,7 +55,7 @@ async function post(base, route, body) {
 }
 
 async function verifyContext() {
-  if (!teamId || !agentId || !taskId) throw new Error("Run tools/Configure-ShogunMemory.ps1 first: Team, Agent and Task IDs are required.")
+  if (!teamId || !agentId || !taskId) throw new Error("Run .shogun/tools/Configure-ShogunMemory.ps1 first: Team, Agent and Task IDs are required.")
   if (!userKey) throw new Error("TencentDB user key is missing. Start the local hub first.")
   const auth = await post(coreUrl, "/v3/meta/auth/verify", { user_key: userKey })
   return auth.user?.user_id || auth.user_id

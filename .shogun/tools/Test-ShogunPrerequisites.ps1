@@ -1,5 +1,5 @@
 #Requires -Version 7
-param([string]$Root = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path)
+param([string]$Root = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path)
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
@@ -32,7 +32,7 @@ if ($docker.available) {
     } catch { $dockerMessage = 'Docker Desktop is installed but its daemon is not running. Start Docker Desktop and retry.' }
 }
 
-$memoryEnv = Join-Path $Root 'deploy\memory\.env'
+$memoryEnv = Join-Path $Root '.shogun\config\.env'
 $memoryEnvReady = $false
 if (Test-Path -LiteralPath $memoryEnv) {
     $content = Get-Content -LiteralPath $memoryEnv -Raw

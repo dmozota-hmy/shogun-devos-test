@@ -3,5 +3,6 @@
 .lciss/outputs/
 .lciss/logs/
 .opencode/node_modules/
-.shogun-memory/
-.shogun/
+.shogun/config/*
+!.shogun/config/.gitkeep
+!.shogun/config/.env.example

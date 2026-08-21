@@ -1,5 +1,5 @@
 #Requires -Version 7
-param([string]$Root = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path)
+param([string]$Root = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path)
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'

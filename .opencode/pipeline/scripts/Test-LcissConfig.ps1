@@ -33,8 +33,9 @@ foreach ($path in @(
     '.opencode\pipeline\scripts\Invoke-LcissPipeline.ps1',
     '.opencode\pipeline\scripts\Invoke-QualityGate.ps1',
     '.opencode\pipeline\scripts\Test-AgentOutput.ps1',
-    'tools\Initialize-ShogunDevOS.ps1',
-    'tools\Test-ShogunPrerequisites.ps1'
+    '.shogun\tools\Initialize-ShogunDevOS.ps1',
+    '.shogun\tools\Test-ShogunPrerequisites.ps1',
+    '.shogun\tools\Sync-ShogunTemplate.ps1'
 )) {
     if (-not (Test-Path -LiteralPath (Join-Path $rootPath $path))) { $errors.Add("Missing LCISS enforcement asset '$path'.") }
 }

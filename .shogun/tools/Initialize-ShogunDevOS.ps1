@@ -1,6 +1,6 @@
 #Requires -Version 7
 param(
-    [string]$Root = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path,
+    [string]$Root = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path,
     [switch]$Demo,
     [switch]$AcceptScaffold,
     [switch]$ConfigureMemoryHub,
@@ -47,12 +47,12 @@ Write-Host $report.copilotProxyIntegration.message -ForegroundColor DarkYellow
 $created = [System.Collections.Generic.List[string]]::new()
 $createDemo = if ($Demo) { $true } elseif ($ConfigureMemoryHub -or $StartMemoryHub) { $false } else { Confirm-Action -Question 'Create the dependency-free memory demo?' -Accepted:$AcceptScaffold }
 if ($createDemo) {
-    $templates = Join-Path $rootPath 'templates\demo-static'
+    $templates = Join-Path $rootPath '.shogun\templates\demo-static'
     $target = Join-Path $rootPath 'demo-memory-garden'
     Get-ChildItem -LiteralPath $templates -File | ForEach-Object { $destination = Join-Path $target $_.Name; if (New-FileIfMissing -Path $destination -Content (Get-Content -LiteralPath $_.FullName -Raw)) { $created.Add($destination) } }
     $pipelinePath = Join-Path $rootPath '.opencode\pipeline\pipeline.json'
     $pipeline = Get-Content -LiteralPath $pipelinePath -Raw | ConvertFrom-Json -Depth 20
-    $pipeline.qualityGate.test.required = $true; $pipeline.qualityGate.test.command = 'pwsh -NoProfile -File tools/Test-DemoMemoryGarden.ps1'; $pipeline.qualityGate.test.PSObject.Properties.Remove('notApplicableReason')
+    $pipeline.qualityGate.test.required = $true; $pipeline.qualityGate.test.command = 'pwsh -NoProfile -File .shogun/tools/Test-DemoMemoryGarden.ps1'; $pipeline.qualityGate.test.PSObject.Properties.Remove('notApplicableReason')
     $pipeline.qualityGate.lint.required = $false; $pipeline.qualityGate.lint.command = ''; $pipeline.qualityGate.lint.notApplicableReason = 'The dependency-free demo has no separate linter.'
     $pipeline.qualityGate.build.required = $false; $pipeline.qualityGate.build.command = ''; $pipeline.qualityGate.build.notApplicableReason = 'The dependency-free demo is served directly as static files.'
     Set-Content -LiteralPath $pipelinePath -Value ($pipeline | ConvertTo-Json -Depth 20) -Encoding utf8
@@ -79,9 +79,9 @@ if ($createDemo -or (-not $ConfigureMemoryHub -and -not $StartMemoryHub)) {
     foreach ($entry in $documents.GetEnumerator()) { $path = Join-Path $rootPath $entry.Key; if (New-FileIfMissing -Path $path -Content $entry.Value) { $created.Add($path) } }
 }
 
-$memoryEnv = Join-Path $rootPath 'deploy\memory\.env'
+    $memoryEnv = Join-Path $rootPath '.shogun\config\.env'
 if ($report.prerequisites.docker.daemonReady -and $ConfigureMemoryHub -and (-not $report.memoryHub.extractionLlmConfigured)) {
-    if (-not (Test-Path -LiteralPath $memoryEnv)) { Copy-Item -LiteralPath (Join-Path $rootPath 'deploy\memory\.env.example') -Destination $memoryEnv; $created.Add($memoryEnv) }
+    if (-not (Test-Path -LiteralPath $memoryEnv)) { Copy-Item -LiteralPath (Join-Path $rootPath '.shogun\config\.env.example') -Destination $memoryEnv; $created.Add($memoryEnv) }
     Write-Host 'The hub needs one OpenAI-compatible extraction LLM. The proxy is not configured here.' -ForegroundColor Yellow
     $baseUrl = Normalize-LlmBaseUrl (Read-Host 'MEMORY_LLM_BASE_URL (Azure: https://resource.cognitiveservices.azure.com/openai/v1)')
     $apiKey = Read-PlainSecret -Prompt 'MEMORY_LLM_API_KEY (hidden input)'
@@ -97,7 +97,7 @@ if (($ConfigureMemoryHub -or $StartMemoryHub) -and -not $report.prerequisites.do
 if ($StartMemoryHub) {
     if (-not $report.prerequisites.docker.daemonReady) { Write-Warning 'The Memory Hub was not started: Docker Desktop is unavailable or stopped.' }
     elseif (-not (Test-Path -LiteralPath $memoryEnv)) { Write-Warning 'The Memory Hub was not started: run again with -ConfigureMemoryHub and set the three MEMORY_LLM_* values.' }
-    else { & (Join-Path $rootPath 'deploy\memory\start.ps1') -HubOnly }
+    else { & (Join-Path $rootPath '.shogun\deploy\memory\start.ps1') -HubOnly }
 }
 $demoReady = Test-Path -LiteralPath (Join-Path $rootPath 'demo-memory-garden\index.html')
 $nextStep = if ($StartMemoryHub -and -not $report.prerequisites.docker.daemonReady) { 'Start Docker Desktop and run this same command again.' } elseif ($StartMemoryHub) { 'Open http://localhost:8125 and create a Team, Agent, and Task.' } elseif ($demoReady) { 'Open demo-memory-garden/index.html, then run /devos for DEMO-001 in OpenCode.' } else { 'Run /shogun-init or rerun with -Demo to create the learning demo.' }

@@ -2,7 +2,6 @@
   "$schema": "https://opencode.ai/config.json",
   "default_agent": "orchestrator",
   "subagent_depth": 1,
-  "enabled_providers": ["github-copilot"],
   "instructions": [".opencode/pipeline/AGENT_OUTPUT_PROTOCOL.md"],
   "mcp": {
     "shogun-memory": {
@@ -21,7 +20,7 @@
       "git diff*": "allow",
       "git log*": "allow",
       "pwsh -NoProfile -File .opencode/pipeline/scripts/*": "allow",
-      "pwsh -NoProfile -File tools/*": "allow",
+      "pwsh -NoProfile -File .shogun/tools/*": "allow",
       "git push*": "ask",
       "git reset --hard*": "ask",
       "git clean*": "ask",
